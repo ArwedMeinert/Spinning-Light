@@ -7,4 +7,4 @@ On the main screen, the sensor data for humidity and temperatre is displayed, on
 
 # Casing 
 
- ![image info](./Pictures/Exploded view.png)
+ ![Exploded View](Pictures/Exploded view.png)
