@@ -1,11 +1,11 @@
 #include <SPI.h>
 #include <Wire.h>
-#include "Adafruit_GFX.h"
-#include "Adafruit_SSD1306.h"
-#include "AM2302-Sensor.h"
-#include "Encoder.h"
-#include "FastLED.h"
-#include "EEPROM.h"
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+#include <AM2302-Sensor.h>
+#include <Encoder.h>
+#include <FastLED.h>
+#include <EEPROM.h>
 #include <Arduino.h>
 #include <FunctionalInterrupt.h>
 
@@ -336,118 +336,6 @@ void initializeDefaultConfig() {
     saveConfiguration();        // Save to EEPROM
 }
 
-
-
-void setup() {
-  Serial.begin(9600);
-  BLEDevice::init("ESP32_BLE_Client");
-
-  // Initialize BLE scan
-  pBLEScan = BLEDevice::getScan();
-  static MyAdvertisedDeviceCallbacks myDeviceCallbacks;
-  pBLEScan->setAdvertisedDeviceCallbacks(&myDeviceCallbacks);
-  pBLEScan->setActiveScan(true); // Active scan retrieves more data
-  pBLEScan->clearResults();
-  pBLEScan->setInterval(100);
-  pBLEScan->setWindow(99);  // less or equal setInterval value
-  pBLEScan->start(scanTime/2, false);     // Scan for 5 seconds
-  pBLEScan->stop();  // Stop scanning
- 
-    
-    Wire.begin(SDA_PIN, SCL_PIN);
-    pinMode(26, INPUT_PULLUP);
-    attachInterrupt(26, handleKey, RISING);
-    
-    // Initialize AM2302 Sensor
-    configData.temperature_sensor=true;
-    if (configData.temperature_sensor){
-      am2302.begin();
-    if (am2302.read() == 0) {
-        Serial.println("AM2302 Sensor OK");
-    } else {
-        Serial.println("AM2302 Sensor failed to initialize");
-        configData.temperature_sensor=false;
-    }
-    }else{
-      mainPage=1;
-    }
-
-    // Initialize OLED Display
-    if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-        Serial.println(F("SSD1306 allocation failed"));
-        for (;;); // Loop forever if display initialization fails
-    }
-    display.clearDisplay();
-    display.display();
-     if (!EEPROM.begin(sizeof(Config))) {
-        Serial.println("Failed to initialize EEPROM.");
-        while (1) {
-            delay(1000); // Infinite loop to halt the program
-        }
-    }
-
-    // Load configuration
-    loadConfiguration();
-    // Setup additional logic for first-time configuration
-    if (configData.first_start) {
-        currentMode = SELECT;
-        selectedVariable = 0;
-        drawMenu(); // Open the menu for setup
-        configData.first_start = false; // Mark as initialized
-        //saveConfiguration(); // Save the updated state
-    }
-
-    Serial.println("Configuration ready.");
-    initializeFastLED();
-    calculateZones();
-     //delay(10000); 
-//scanAndDisplayDevices();
-  //connected=connecting_bt();
-}
-
-float humidity=-999;
-float temperature=-999;
-long last_increase=0;
-long last_try_connect=100000;
-
-
-void loop() {
-  if (startup){
-    startup=false;
-  }
-  if (!connected && millis()-last_try_connect>20000){
-    connected=connecting_bt();
-    last_try_connect=millis();
-  }
-  handleEncoderInput();
-  handleButtonPress();
-  if (currentMode == NORMAL) {
-    // Display temperature and humidity in NORMAL mode
-    //noInterrupts();
-    if (configData.temperature_sensor){
-    status=am2302.read();
-    if (status==0){
-      humidity = am2302.get_Humidity();
-      temperature = am2302.get_Temperature();
-    }}
-    display.clearDisplay();
-    if (mainPage==0){
-    writeData(temperature, humidity, 0, 0);
-    }else if (mainPage==1){
-      writePower(0,0);
-    }else if (mainPage==2){
-      writeBT(0,0);
-    }else{
-      mainPage=0;
-    }
-    display.display();
-    showPower();
-    
-    //interrupts();
-  }
-}
-
-
 void writeBT( int x_pos, int y_pos) {
   display.setTextSize(2);             // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE);  // Draw white text
@@ -492,6 +380,15 @@ display.setCursor(0, 16);
   y_pos += 32; // Move down for BT info (adjust position as needed)
   display.setTextSize(1);  // Smaller text size for BT address and name
   display.setCursor(x_pos, y_pos);
+
+  display.print("Addr:");
+  display.println(configData.bt_adress);  // Display BT address
+
+  y_pos += 15;  // Adjust position for BT name
+  display.setCursor(x_pos, y_pos);
+
+  display.print("Name:");
+  display.println(configData.bt_name);  // Display BT name
   // Display Bluetooth connection status symbol in top-right corner
 } else {
   display.println("Temperature Sensor");
@@ -547,16 +444,46 @@ void initializeFastLED() {
 
 void drawPixels() {
   FastLED.clear();
-    for (int i = 0; i < currentPixelCount/2; i++) {
-        leds[i] = z1_colour;  // All LEDs set to red
-        Serial.println(i);
+
+  // Map pixel indices to a power value between zone1_middle and zone6_middle.
+  // (Make sure calculateZones() has already been called so that these values are set.)
+  for (int i = 0; i < currentPixelCount; i++) {
+    // Compute a value along the power range. The first pixel will correspond to zone1_middle,
+    // the last pixel to zone6_middle.
+    float mappedValue = zone1_middle + (zone7_start) * (i / float(currentPixelCount - 1));
+    CRGB color;
+
+    // Decide which zone segment this mapped value falls into and blend accordingly.
+    if (mappedValue <= zone2_middle) {
+      // Between zone 1 and zone 2.
+      float ratio = (mappedValue - zone1_middle) / (zone2_middle - zone1_middle);
+      color = blendColors(z1_colour, z2_colour, ratio);
+    } else if (mappedValue <= zone3_middle) {
+      // Between zone 2 and zone 3.
+      float ratio = (mappedValue - zone2_middle) / (zone3_middle - zone2_middle);
+      color = blendColors(z2_colour, z3_colour, ratio);
+    } else if (mappedValue <= zone4_middle) {
+      // Between zone 3 and zone 4.
+      float ratio = (mappedValue - zone3_middle) / (zone4_middle - zone3_middle);
+      color = blendColors(z3_colour, z4_colour, ratio);
+    } else if (mappedValue <= zone5_middle) {
+      // Between zone 4 and zone 5.
+      float ratio = (mappedValue - zone5_middle) / (zone6_middle - zone5_middle);
+      color = blendColors(z4_colour, z5_colour, ratio);
+    }  else if (mappedValue <= zone6_middle){
+    // Between zone 4 and zone 5.
+      float ratio = (mappedValue - zone6_middle) / (zone7_start - zone6_middle);
+      color = blendColors(z6_colour, z7_colour, ratio);
+    }else {
+      color = z7_colour;
     }
-    for (int i=currentPixelCount/2;i<currentPixelCount;i++){
-        leds[i] = z6_colour;  // All LEDs set to red
-        Serial.println(i);
-    }
-    FastLED.show();
+
+    leds[i] = color;
+    Serial.println(i);
+  }
+  FastLED.show();
 }
+
 
 
 
@@ -929,5 +856,118 @@ void drawScanResults() {
 
 
 
+
+
+
+
+void setup() {
+  Serial.begin(9600);
+  BLEDevice::init("ESP32_BLE_Client");
+
+  // Initialize BLE scan
+  pBLEScan = BLEDevice::getScan();
+  static MyAdvertisedDeviceCallbacks myDeviceCallbacks;
+  pBLEScan->setAdvertisedDeviceCallbacks(&myDeviceCallbacks);
+  pBLEScan->setActiveScan(true); // Active scan retrieves more data
+  pBLEScan->clearResults();
+  pBLEScan->setInterval(100);
+  pBLEScan->setWindow(99);  // less or equal setInterval value
+  pBLEScan->start(scanTime/2, false);     // Scan for 5 seconds
+  pBLEScan->stop();  // Stop scanning
+ 
+    
+    Wire.begin(SDA_PIN, SCL_PIN);
+    pinMode(26, INPUT_PULLUP);
+    attachInterrupt(26, handleKey, RISING);
+    
+    // Initialize AM2302 Sensor
+    configData.temperature_sensor=true;
+    if (configData.temperature_sensor){
+      am2302.begin();
+    if (am2302.read() == 0) {
+        Serial.println("AM2302 Sensor OK");
+    } else {
+        Serial.println("AM2302 Sensor failed to initialize");
+        configData.temperature_sensor=false;
+    }
+    }else{
+      mainPage=1;
+    }
+
+    // Initialize OLED Display
+    if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+        Serial.println(F("SSD1306 allocation failed"));
+        for (;;); // Loop forever if display initialization fails
+    }
+    display.setRotation(2);
+    display.clearDisplay();
+    display.display();
+     if (!EEPROM.begin(sizeof(Config))) {
+        Serial.println("Failed to initialize EEPROM.");
+        while (1) {
+            delay(1000); // Infinite loop to halt the program
+        }
+    }
+
+    // Load configuration
+    loadConfiguration();
+    // Setup additional logic for first-time configuration
+    if (configData.first_start) {
+        currentMode = SELECT;
+        selectedVariable = 0;
+        drawMenu(); // Open the menu for setup
+        configData.first_start = false; // Mark as initialized
+        //saveConfiguration(); // Save the updated state
+    }
+
+    Serial.println("Configuration ready.");
+    initializeFastLED();
+    calculateZones();
+     //delay(10000); 
+//scanAndDisplayDevices();
+  //connected=connecting_bt();
+}
+
+float humidity=-999;
+float temperature=-999;
+long last_increase=0;
+long last_try_connect=100000;
+
+
+void loop() {
+  if (startup){
+    startup=false;
+  }
+  if (!connected && millis()-last_try_connect>200000){
+    connected=connecting_bt();
+    last_try_connect=millis();
+  }
+  handleEncoderInput();
+  handleButtonPress();
+  if (currentMode == NORMAL) {
+    // Display temperature and humidity in NORMAL mode
+    //noInterrupts();
+    if (configData.temperature_sensor){
+    status=am2302.read();
+    if (status==0){
+      humidity = am2302.get_Humidity();
+      temperature = am2302.get_Temperature();
+    }}
+    display.clearDisplay();
+    if (mainPage==0){
+    writeData(temperature, humidity, 0, 0);
+    }else if (mainPage==1){
+      writePower(0,0);
+    }else if (mainPage==2){
+      writeBT(0,0);
+    }else{
+      mainPage=0;
+    }
+    display.display();
+    showPower();
+    
+    //interrupts();
+  }
+}
 
 
