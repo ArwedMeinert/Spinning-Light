@@ -23,11 +23,11 @@
 
 struct Config {
     uint32_t magicNumber = 0xA5A5A5A5;  // Identifier for validity
-    int ftp = 0;
+    int ftp = 100;
     float brightness = 0.5;
-    char bt_name[20]="";
+    char bt_name[20]="No Device";
     char bt_adress[20] = "00:00:00:00"; // Changed to char array for compatibility
-    int num_pixel = 10;
+    int num_pixel = 144;
     bool temperature_sensor = true;
     bool first_start = true;
     float z1_percentage = 0.6;
@@ -36,8 +36,8 @@ struct Config {
     float z4_percentage = 1.05;
     float z5_percentage = 1.2;
     float z6_percentage = 1.3;
-    float filter_constant = 0.1;
-    float spark_constant = 0.6;
+    float filter_constant = 0.05;
+    float spark_constant = 0.38;
 };
 
 
@@ -49,7 +49,7 @@ Config configDataBackup; // Backup for changes
 
 
 // GUI
-enum Mode { NORMAL, SELECT, ADJUST,BTSCAN };
+enum Mode { NORMAL, SELECT, ADJUST,BTSCAN,STARTUP };
 Mode currentMode = NORMAL;
 int selectedVariable = 0;    // Index of the currently selected variable
 bool inAdvancedTab = false;  // Track if the advanced tab is selected
@@ -70,7 +70,7 @@ Encoder myEnc(10, 13);
 long oldPosition = -999;
 bool isButtonPressed = false;
 long lastUpdateMillis = 0;
-const int ENCODER_STEP_THRESHOLD = 6;  // Set the number of steps needed before an action is taken
+const int ENCODER_STEP_THRESHOLD = 3;  // Set the number of steps needed before an action is taken
 
 // Neopixel
 #define PIN        5 // On Trinket or Gemma, suggest changing this to 1
@@ -111,14 +111,13 @@ int status = -1;
 //BTLE
 BLEClient* client;
 BLEScan* pBLEScan;
-int scanTime=8;
+int scanTime=3;
 int deviceCount = 0;
 const int MAX_DEVICES = 10;
 bool connected=false;
 BLEAdvertisedDevice foundDevices[MAX_DEVICES]; // Use pointers to manage memory
 static BLEUUID serviceUUID("1818");  // Power Service UUID (16-bit)
 static BLEUUID charUUID("2A63");
-bool startup=true;
 
 void notifyCallback(BLERemoteCharacteristic* characteristic, uint8_t* data, size_t length, bool isNotify) {
   if (length >= 4) {
@@ -152,7 +151,7 @@ class MyClientCallback : public BLEClientCallbacks {
 };
 
 void ARDUINO_ISR_ATTR handleKey() {
-  //detachInterrupt(36);
+  detachInterrupt(26);
     isButtonPressed = true;
 }
 
@@ -165,10 +164,11 @@ bool connecting_bt(){
   display.setCursor(0,int(SCREEN_HEIGHT/2) );
   display.print("Device");
   display.display();
+  delay(1000);
+  client = BLEDevice::createClient();
   BLEAddress deviceAddress(configData.bt_adress); // Replace with your device's MAC address
     Serial.println(deviceAddress.toString());
-  client = BLEDevice::createClient();
-  client->disconnect();
+  
   client->setClientCallbacks(new MyClientCallback());
   delay(200);
   if (!client->connect(deviceAddress)) {
@@ -364,38 +364,25 @@ display.setTextSize(2);
 
 
 void writeData(float temperature, float humidity, int x_pos, int y_pos) {
-  display.setTextSize(2);             // Normal 1:1 pixel scale
+  display.setTextSize(3);             // Normal 1:1 pixel scale
   display.setTextColor(SSD1306_WHITE);  // Draw white text
   display.setCursor(x_pos, y_pos);     // Start at specified position
 if (configData.temperature_sensor){
   // Display temperature and humidity
   display.print("T:");
   display.println(String(temperature, 1));
-display.setCursor(0, 16);
+//display.setCursor(0, 24);
   display.print("H:");
   display.print(String(humidity, 0));
   display.println(" %");
 
-  // Display BT address and BT name from configData
-  y_pos += 32; // Move down for BT info (adjust position as needed)
-  display.setTextSize(1);  // Smaller text size for BT address and name
-  display.setCursor(x_pos, y_pos);
-
-  display.print("Addr:");
-  display.println(configData.bt_adress);  // Display BT address
-
-  y_pos += 15;  // Adjust position for BT name
-  display.setCursor(x_pos, y_pos);
-
-  display.print("Name:");
-  display.println(configData.bt_name);  // Display BT name
-  // Display Bluetooth connection status symbol in top-right corner
 } else {
+  display.setTextSize(2);
   display.println("Temperature Sensor");
   display.println("tuned Off");
 }
-  display.setCursor(SCREEN_WIDTH - 24, 0); // Position it at top-right corner (16 pixels for the symbol size)
-
+  display.setCursor(SCREEN_WIDTH - 20, 0); // Position it at top-right corner (16 pixels for the symbol size)
+display.setTextSize(1);
   if (connected) {
     display.print("C");
   } else {
@@ -450,7 +437,7 @@ void drawPixels() {
   for (int i = 0; i < currentPixelCount; i++) {
     // Compute a value along the power range. The first pixel will correspond to zone1_middle,
     // the last pixel to zone6_middle.
-    float mappedValue = zone1_middle + (zone7_start) * (i / float(currentPixelCount - 1));
+    float mappedValue = zone1_middle + (zone7_start-zone1_middle) * (i / float(currentPixelCount - 1));
     CRGB color;
 
     // Decide which zone segment this mapped value falls into and blend accordingly.
@@ -484,6 +471,26 @@ void drawPixels() {
   FastLED.show();
 }
 
+void greetUser() {
+  currentMode=STARTUP;
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE);
+  display.setCursor(10, 10);
+  display.println("Welcome!");
+
+  display.setTextSize(1);
+  display.setCursor(10, 30);
+  display.println("Press the button");
+
+  display.display();  // Refresh the screen
+
+  // Make the LEDs glow in random colors
+  for (int i = 0; i < currentPixelCount; i++) {
+    leds[i] = CRGB(random(0, 255), random(0, 255), random(0, 255));  // Random RGB color
+  }
+  FastLED.show();
+}
 
 
 
@@ -556,6 +563,7 @@ void adjustVariable() {
     } else if (selectedVariable == 2) {
       display.print(configData.brightness, 2);
     } else if (selectedVariable == 3) {
+      Serial.println("I got here 2");
       scanAndDisplayDevices();
     }
   } else {
@@ -671,11 +679,19 @@ void handleEncoderInput() {
 
 
 void handleButtonPress() {
+
+  static unsigned long lastPressTime = 0;  // Store last button press time
+  if (millis() - lastPressTime < 1500) {   // Ignore presses within 200ms
+    return;
+  }
+  lastPressTime = millis();  // Update last press time
+
   bool changed;
   
-  if (isButtonPressed && millis() - lastUpdateMillis > 500) {
+  if (isButtonPressed && millis() - lastUpdateMillis > 1500) {
     isButtonPressed = false;
     lastUpdateMillis = millis();
+    attachInterrupt(26, handleKey, FALLING); 
     Serial.println("Button");
     if (currentMode == NORMAL) {
       configDataBackup = configData;
@@ -692,7 +708,7 @@ void handleButtonPress() {
           saveConfiguration();
           calculateZones();
         }
-        Serial.println(changed);
+
       } else if (selectedVariable == 4) { // Advanced Settings tab
         inAdvancedTab = true;
         selectedVariable = 0;
@@ -704,7 +720,7 @@ void handleButtonPress() {
         currentMode = SELECT;  // Return to SELECT mode
         drawMenu();  // Refresh the screen
       } else if (!inAdvancedTab && selectedVariable == 3) {
-        client->disconnect();
+        //client->disconnect();
         currentMode = BTSCAN;  // Switch to BTSCAN mode
         deviceCount=0;
         scanAndDisplayDevices();  // Start scanning for devices
@@ -714,7 +730,7 @@ void handleButtonPress() {
         resetConfig();
         inAdvancedTab = false;
         selectedVariable = 0;
-        currentMode = NORMAL;  // Return to SELECT mode
+        currentMode = STARTUP;  // Return to SELECT mode
       } else {
         currentMode = ADJUST;
         adjustVariable();  // Call this function to update the selected variable value
@@ -722,13 +738,22 @@ void handleButtonPress() {
     } else if (currentMode == ADJUST) {
       currentMode = SELECT;
       drawMenu();  // Return to SELECT mode and refresh the menu
-    } else if (currentMode == BTSCAN) {
+    } else if (currentMode==STARTUP){
+        currentMode=SELECT;
+        selectedVariable=3;
+        drawMenu();  // Return to SELECT mode and refresh the menu
+      }
+    
+    else if (currentMode == BTSCAN) {
       // Handle button press while in BTSCAN mode
       if (selectedVariable == 0) {
         currentMode = SELECT;  // Return to SELECT mode
         selectedVariable = 3;  // Keep the focus on "BT Address"
+        // Clear previous results **after** scan, not before
+        pBLEScan->clearResults();
         drawMenu();  // Refresh the screen
       }
+      
       if (selectedVariable >= 0 && selectedVariable < deviceCount+1) {
         // Store the selected device's address
 
@@ -747,6 +772,8 @@ void handleButtonPress() {
         connected=connecting_bt();
         currentMode = SELECT;  // Return to SELECT mode
         selectedVariable = 3;  // Keep the focus on "BT Address"
+        // Clear previous results **after** scan, not before
+         pBLEScan->clearResults();
         deviceCount=0;
         drawMenu();  // Refresh the screen
         }
@@ -761,9 +788,10 @@ void resetConfig() {
   configData=configDefault;
   // After reset, exit Advanced tab and return to basic menu
   inAdvancedTab = false;
-  Mode currentMode = NORMAL;
+  Mode currentMode = STARTUP;
   selectedVariable = 0;  // Index of the currently selected variable
-  drawMenu();  // Redraw the menu after resetting
+  saveConfiguration();
+  greetUser();
 }
 
 bool hasConfigChanged() {
@@ -772,6 +800,7 @@ bool hasConfigChanged() {
 
 
 void scanAndDisplayDevices() {
+
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
@@ -779,29 +808,26 @@ void scanAndDisplayDevices() {
   display.setCursor(0, 0);
   display.print("Scanning...");
   display.display();
-pBLEScan->clearResults();
-  // Start BLE scan for the set duration
-  pBLEScan->start(scanTime, false);
+  if (client && client->isConnected()){
+    client->disconnect();
+  }
+  delay(100);
+    if (!pBLEScan) {
+    Serial.println("BLE Scan object is null!");
+    return;
+  }
 
-  // Wait for scan to finish
-  pBLEScan->stop();
-  // After scanning is finished, display the results
+  // Start BLE scan
+pBLEScan->start(scanTime, false);
+
   drawScanResults();
 }
+
 
 
 void drawScanResults() {
   display.clearDisplay();
   display.setTextSize(1);
-  if (startup){
-    currentMode=NORMAL;
-    strncpy(configData.bt_name, configData.bt_name, sizeof(configData.bt_name) - 1);
-    configData.bt_name[sizeof(configData.bt_name) - 1] = '\0'; // Ensure null termination
-
-    strncpy(configData.bt_adress, configData.bt_adress, sizeof(configData.bt_adress) - 1);
-    configData.bt_adress[sizeof(configData.bt_adress) - 1] = '\0'; // Ensure null termination
-    return;
-  }
 
   if (deviceCount == 0) {
     display.setCursor(0, 0);
@@ -862,46 +888,16 @@ void drawScanResults() {
 
 void setup() {
   Serial.begin(9600);
-  BLEDevice::init("ESP32_BLE_Client");
-
-  // Initialize BLE scan
-  pBLEScan = BLEDevice::getScan();
-  static MyAdvertisedDeviceCallbacks myDeviceCallbacks;
-  pBLEScan->setAdvertisedDeviceCallbacks(&myDeviceCallbacks);
-  pBLEScan->setActiveScan(true); // Active scan retrieves more data
-  pBLEScan->clearResults();
-  pBLEScan->setInterval(100);
-  pBLEScan->setWindow(99);  // less or equal setInterval value
-  pBLEScan->start(scanTime/2, false);     // Scan for 5 seconds
-  pBLEScan->stop();  // Stop scanning
- 
-    
-    Wire.begin(SDA_PIN, SCL_PIN);
-    pinMode(26, INPUT_PULLUP);
-    attachInterrupt(26, handleKey, RISING);
-    
-    // Initialize AM2302 Sensor
-    configData.temperature_sensor=true;
-    if (configData.temperature_sensor){
-      am2302.begin();
-    if (am2302.read() == 0) {
-        Serial.println("AM2302 Sensor OK");
-    } else {
-        Serial.println("AM2302 Sensor failed to initialize");
-        configData.temperature_sensor=false;
-    }
-    }else{
-      mainPage=1;
-    }
-
-    // Initialize OLED Display
-    if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
+  Wire.begin(SDA_PIN, SCL_PIN);
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
         Serial.println(F("SSD1306 allocation failed"));
         for (;;); // Loop forever if display initialization fails
     }
     display.setRotation(2);
     display.clearDisplay();
     display.display();
+    // Initialize OLED Display
+    
      if (!EEPROM.begin(sizeof(Config))) {
         Serial.println("Failed to initialize EEPROM.");
         while (1) {
@@ -911,18 +907,68 @@ void setup() {
 
     // Load configuration
     loadConfiguration();
-    // Setup additional logic for first-time configuration
-    if (configData.first_start) {
-        currentMode = SELECT;
-        selectedVariable = 0;
-        drawMenu(); // Open the menu for setup
-        configData.first_start = false; // Mark as initialized
-        //saveConfiguration(); // Save the updated state
+    Serial.println("Configuration ready.");
+
+  BLEDevice::init("ESP32_BLE_Client");
+
+  // Initialize BLE scan
+  
+  pBLEScan = BLEDevice::getScan();
+  client = BLEDevice::createClient();
+  if (!pBLEScan) {
+    Serial.println("Failed to initialize BLE scan!");
+    return;
+  }
+
+  static MyAdvertisedDeviceCallbacks myDeviceCallbacks;
+  pBLEScan->setAdvertisedDeviceCallbacks(&myDeviceCallbacks);
+  pBLEScan->setActiveScan(true);  // Active scan retrieves more data
+  pBLEScan->setInterval(100);
+  pBLEScan->setWindow(99);  // Must be <= interval
+  pBLEScan->start(scanTime, false);
+  pBLEScan->clearResults();
+  if (configData.temperature_sensor){
+      am2302.begin();
+  }
+  delay(500);  
+  
+    
+    pinMode(26, INPUT_PULLUP);
+    attachInterrupt(26, handleKey, FALLING);
+    
+    // Initialize AM2302 Sensor
+    configData.temperature_sensor=true;
+    if (configData.temperature_sensor){
+      am2302.begin();
+    if (am2302.read() == 0) {
+        Serial.println("AM2302 Sensor OK");
+    } else {
+      int j=0;
+        while (j<20 | am2302.read() == 0){
+          j++;
+          delay(100);
+        }
+        if (am2302.read() == 0){
+          Serial.println("AM2302 Sensor OK");
+        } else{
+          Serial.println("AM2302 Sensor NOK");
+        }
+    }
+    }else{
+      mainPage=1;
     }
 
-    Serial.println("Configuration ready.");
+    
+    // Setup additional logic for first-time configuration
+    
+
+    
     initializeFastLED();
     calculateZones();
+    if (configData.first_start) {
+        greetUser();
+        //saveConfiguration(); // Save the updated state
+    }
      //delay(10000); 
 //scanAndDisplayDevices();
   //connected=connecting_bt();
@@ -931,14 +977,12 @@ void setup() {
 float humidity=-999;
 float temperature=-999;
 long last_increase=0;
-long last_try_connect=100000;
+long last_try_connect=1000;
 
 
 void loop() {
-  if (startup){
-    startup=false;
-  }
-  if (!connected && millis()-last_try_connect>200000){
+
+  if (!connected && millis()-last_try_connect>100000 && !configData.first_start){
     connected=connecting_bt();
     last_try_connect=millis();
   }
