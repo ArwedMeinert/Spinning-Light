@@ -1,45 +1,89 @@
 # Spinning Light
-___
-This project aims to bring gaming RGB and and spinning bikes to your home trainer. The lamp pairs with the Power trainer and maps the power to its LEDs. The color corresponds to the zones based on the set FTP value. When sprinting the LEDs show this by randomly turning red and yellow to add motivaition to you pain cave. 
-All parameters such as the brightness of the LEDs, the FTP value and the power trainer BT adress can be changed via the GUI. Under Advanced settings, the parameters on the zone percentages, the filter constants for the LEDs and the amount of pixels can be changed. 
-___
-On the main screen, the sensor data for humidity and temperatre is displayed, on the second page the current power and on the third is the bluetooth adress and the power trainers name displayed. 
+
+___  
+This project combines dynamic RGB lighting with a home trainer to enhance your workout experience. The lamp pairs with a power trainer, mapping your power output to its LEDs. The displayed color corresponds to different zones based on your set FTP value. During sprints, the LEDs flash red and yellow to motivate you in your "pain cave."  
+
+All parameters—such as LED brightness, FTP value, and the power trainer’s Bluetooth address—can be adjusted via the GUI. Under **Advanced Settings**, you can modify the zone percentages, LED filter constants, and the number of pixels.  
+___  
+On the main screen, sensor data for humidity and temperature is displayed. The second page shows the current power output, while the third page displays the Bluetooth address and the power trainer's name.
+
+---
+
 # Controller and Code
-The light uses an ESP32 NodeMCU mini to not take up to much space on the PLC. The programming was done using Arduino IDE with the ESP32 Boards installed (select Node32s). The push button included in the encoder is used without an interrupt. This somehow helps to improve performance and helps prevent wrongly detected button inputs. Since a real pull up resistor is used, the internal pull up on this pin is disabled. 
+
+The lamp is built around an ESP32 NodeMCU Mini to keep the design compact. The firmware was developed using the Arduino IDE with the ESP32 board definitions (select Node32s). The encoder’s built-in push button is handled without an interrupt, which improves performance and reduces false button detections. A physical pull-up resistor is used, so the internal pull-up is disabled on that pin.
+
 ## Connecting Bluetooth
-The connection is done using BTLE with the respective libary included in this sketch. Ideally, it should write the adress to the EEPROM to save for later startups and connect automatically. However, this does not work as intended. Once a power trainer is connected, the ESP is able to reconnect automatically. But when the ESP is restarted, the trainer needs to be searched again. 
-Once connected, the ESP subscribes to the Power Service ot the trainer and thereby gets the power the trainer detects. The color is displayed on the LED strip while being mapped to the respective color.
 
-# Casing 
-The casing is designed with modularity in mind. All holes such as the display, the encoder, the temperature sensor and the USB port can be opened after the printing is complete. So if you want to hardcode the BT adress and dont want to use the GUI that is possible. 
-![Exploded view](https://github.com/user-attachments/assets/75ef979d-03b7-4561-b3dc-d7930409f4f4){width=50%}
+Bluetooth Low Energy (BTLE) is used for connectivity, with the necessary library included in the sketch. Ideally, the device writes the trainer’s address to the EEPROM for automatic reconnection on subsequent startups. However, while the ESP can reconnect automatically after a trainer is initially connected, it does not do so after a restart and must search for the trainer again. Once connected, the ESP subscribes to the power service of the trainer and receives its power data, which is then mapped to LED colors.
 
+---
+
+# Casing
+
+The casing is designed for modularity. Openings for the display, encoder, temperature sensor, and USB port can be finalized after printing. This also allows you to hardcode the Bluetooth address if you prefer not to use the GUI.
+
+<img src="https://github.com/user-attachments/assets/75ef979d-03b7-4561-b3dc-d7930409f4f4" alt="Exploded view" style="width:25%;">
+
+---
 
 # PCB
-![IMG_20250216_102324_218](https://github.com/user-attachments/assets/e6889604-5c36-4e03-aae6-2c7883edb1f4){width=50%}
-The PCB is designed to work with Dupond connectors for all external parts. The ESP is mounted on the back to leave space for the casings lid. The USB-C port of the ESP is placed in a way to allow access from the outside if the plastic is removed. It can be powered either via USB or via the 5V connector that can be placed in the hole on the left. The encoder is placed directly on the PCB and it uses three pull up resistors (two for the rotation of the encoder, one for the push button on the encoder). All external connectors are 
-The supports do not all need to be screwed in, since they mostly support the push button to prevent the PCB from bending when pushing. 
-![IMG_20250216_104605_619](https://github.com/user-attachments/assets/20a13f36-a476-45df-8c34-f55ceb221f56){width=50%}
-#Assembly
-The Temperature sensor can be screwed on the left side of the casing. To make it fit, the respectable part of the lid needs to be removed to allow space for the PCB of the sensor to stick out. The sensor is mounted using M2 screws. It should be screwed on from the outside and needs to be fixed using a nut on the other side. This needs to be done first.
-Next, the threads can be placed in the holes of the standoffs. At minimum, four screws should be used to fix the PCB. THe other standoffs are mainly for the support of the encoder push button. The PCB can be fixed in the casing and the 5V supply can be connected if it should be used. Otherwise, the power can be supplied via the USB port. 
-![IMG_20250216_113616_389](https://github.com/user-attachments/assets/612b4093-2728-4690-a1e3-c02f1faa55dd){width=50%}
 
-Next, the lid needs to be prepared. The parts of the lid where the IO should be placed needs to be removed (the square for the screen and the circle for the encoder). The OLED screen needs to be prepared with a dupond connector and can be srewed in place. If the screen is fixed on the lid or below does not mapper, if it is placed below however, one needs to make shure the screen does not break. 
-Finally, the profile with the LEDs needs to be attatched on the top with the cable sticking into the casing. Depending on the LEDs that are used, the Cables need to be prepared according to the PCBs silkscreen. When the lid is prepared and the connectores have been attatched, it can be placed on the lid. When a temperature sensor is used, this needs to be done carefully to not break any parts. It can be tricky to place it correctly because of the sensor and the encoder interfering with other parts. Once done, screw the lid down and everything should work. 
-![IMG_20250216_135642_520](https://github.com/user-attachments/assets/46d06167-4708-4c2c-b793-650a5338f7ea){width=50%}
-#Usage
-At startup, the LEDs light up in random colours. When pressing down the encoder, you are directed to the menu. Here, you can change the FTP, connect the powertrainer and change the brightness (default is 50%). When changing the brightness, you get a preview with the Z1 color on the first LED and the Z6 color at the top and all other colors in between. 
-In the menu, pressing back brings you to the main screen with either the current temperature and humidity, the power or the current connected device (can be changed with the encoder). On the top right, the symbol indicates if the powertrainer is connected or not. 
-You can go back to the main menu by pressing the button down. The last point in this menu is the Advanced Settings tab. When navigating there and pressing down the encoder, you can change the percentage of the zones (e.G. changing the Z1 percentage from 60% of the FTP to 70% of the FTP). You can also change the amount of LEDs that you use (default is 144) and the constants of the filter. The filter is used to achive a gradual change in the LED color. It is implemented as a classical low-pass filter. The filter constant defines the percentage of the new colour of the most recent power reading (e.G when using 0.05, the new colour is obtained by taking 95% of the old colour and 5% of the new color based on the power setting). Since the LEDs refresh multiple times per second this gives a smooth effect in color change.
-The spark constant simmilarly defines the amount of sparks when exeeding Z7. A higher spark constant gives more sparks when sprinting and a lower gives less. 
-The last point in the advanced settings tab resets the config data to the default settings. 
-Once a setting has been changed and the main page (where you see the power, temperature or device adress) is accessed, the settings are saved to the eeprom and are accessed at every start up. So you only need to set your FTP, trainer adress (in theory), brightness, etc. once.
-#Limitation/Improvements
-- The light only works when your trainer has at least two bluetooth channels. I got to test the Wahoo KickrCore and the Zwift Hub. Since the Wahoo KickrCore works I suspect it works with other Wahoo power trainers as well, but I have not tested it. But I am happy for Information on this topic. The following table can be updated.
-| Works           | Does not Work     |
+<img src="https://github.com/user-attachments/assets/e6889604-5c36-4e03-aae6-2c7883edb1f4" alt="IMG_20250216_102324_218" style="width:20%;">
+
+The PCB is designed to work with DuPont connectors for all external components. The ESP is mounted on the back to leave space for the casing lid. The ESP's USB-C port is positioned to allow external access if the plastic cover is removed. The board can be powered either via USB or through the 5V connector located in the left opening. The encoder is mounted directly on the PCB and uses three pull-up resistors—two for rotation detection and one for the push button.
+
+Not all supports need to be screwed in; they primarily help stabilize the push button and prevent the PCB from bending under pressure.
+
+<img src="https://github.com/user-attachments/assets/20a13f36-a476-45df-8c34-f55ceb221f56" alt="IMG_20250216_104605_619" style="width:20%;">
+
+---
+
+# Assembly
+
+The temperature sensor is secured to the left side of the casing. To ensure a proper fit, a section of the lid must be removed to allow the sensor's PCB to protrude. The sensor is mounted using M2 screws, fastened from the outside with a nut on the opposite side. This step should be completed first.
+
+Next, insert the screws into the standoff holes. Use at least four screws to secure the PCB; the remaining standoffs primarily support the encoder’s push button. Once the PCB is fixed within the casing, connect the 5V supply if necessary—or use the USB port for power.
+
+<img src="https://github.com/user-attachments/assets/612b4093-2728-4690-a1e3-c02f1faa55dd" alt="IMG_20250216_113616_389" style="width:20%;">
+
+Prepare the lid by removing the sections designated for I/O components (the square for the screen and the circle for the encoder). The OLED screen should be equipped with a DuPont connector and then screwed in place. It doesn't matter whether the screen is mounted on the lid or underneath it; however, if it is mounted below, ensure it is properly supported to avoid damage.
+
+Finally, attach the LED profile to the top, ensuring that the cable is routed into the casing. Depending on the LEDs used, prepare the cables according to the PCB's silkscreen guidelines. Once the lid is modified and the connectors are attached, carefully install the lid to avoid interfering with the sensor and encoder. Finally, secure the lid with screws, and your setup should be operational.
+
+<img src="https://github.com/user-attachments/assets/46d06167-4708-4c2c-b793-650a5338f7ea" alt="IMG_20250216_135642_520" style="width:20%;">
+
+---
+
+# Usage
+
+Upon startup, the LEDs display random colors. Pressing the encoder takes you to the menu, where you can adjust the FTP, connect the power trainer, and change the brightness (default is 50%). As you adjust the brightness, a preview gradient is shown—from the Z1 color on the first LED to the Z6 color on the last LED.
+
+Within the menu, pressing the back button returns you to the main screen, which displays the current temperature and humidity, power output, or connected device (selectable via the encoder). A symbol in the top right corner indicates whether the power trainer is connected.
+
+Pressing the button again returns you to the main menu. The final option in the menu is the **Advanced Settings** tab. Here, you can adjust the zone percentages (for example, changing the Z1 zone from 60% of FTP to 70% of FTP), the number of LEDs (default is 144), and the filter constants. The filter provides a gradual transition between LED colors using a low-pass algorithm. The filter constant determines the weight of the most recent power reading; for example, a constant of 0.05 means the new color is calculated as 95% of the previous color and 5% of the new value. Since the LEDs refresh multiple times per second, this results in a smooth color transition.
+
+Similarly, the spark constant controls the number of sparks triggered when exceeding zone Z7. A higher spark constant produces more sparks during sprints, while a lower constant produces fewer sparks. The final option in the Advanced Settings tab resets the configuration data to its default values. Once you change a setting and return to the main screen, the settings are saved to the EEPROM and loaded at each startup—so you only need to configure your FTP, trainer address, brightness, and other settings once.
+
+---
+
+# Limitations and Improvements
+
+- **Bluetooth Channels:**  
+  The lamp only works with trainers that support at least two Bluetooth channels. I have tested it with the Wahoo KickrCore and the Zwift Hub. Since the Wahoo KickrCore works, I suspect it will also work with other Wahoo power trainers, although I have not tested them. I welcome any additional information on this topic. See the table below.
+
+- **Automatic Connection Issue:**  
+  For some reason, upon startup the microcontroller does not automatically connect to the power trainer, even though the saved address appears to be correct. Manual connection works without issue, and the device reconnects if the power trainer loses power. Despite saving the address in the configuration data, automatic reconnection does not function as expected. I have tried scanning and multiple connection attempts at startup without success. The current workaround is to avoid powering off the lamp (as it consumes minimal power). Any advice on resolving this issue would be greatly appreciated.
+
+- **UI Responsiveness:**  
+  At times, the user interface may feel somewhat sluggish, particularly when the encoder is turned rapidly. I suspect this is primarily due to the inexpensive encoder, though other factors may contribute. Turning the encoder slowly generally results in smooth operation.
+
+---
+
+# Known Compatible Power Trainers
+
+| Works           | Does Not Work     |
 |-----------------|-------------------|
 | Wahoo KickrCore | Zwift Hub/Hub One |
-- For some reason, at startup of the microcontroller it does not connect automatically to the power trainer even if the adress should work. When connecting manually, it connects without a problem and reconnects when the power trainer loses power. Since the only thing used for connecting is the adress and that is saved to the config data, I have no idea why it does not work. I have tried to scan at startup or connect multiple times, but nothing helps. So the workaround is to just dont power off the lamp (it does not consume a lot of power). For advice I would be very thankful.
-- Sometimes, the UI feels a bit janky. Espeacially when turniing the encoder fast. I suspect that the main reason is the cheap encoder, but I could be wrong. Turning the encoder knob slowly usually works.
+
 
