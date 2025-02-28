@@ -103,6 +103,9 @@ float prevPower;
 #define SDA_PIN 21
 #define SCL_PIN 22
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+static const unsigned char PROGMEM image_wifi_not_connected_bits[] = {0x21,0xf0,0x00,0x16,0x0c,0x00,0x08,0x03,0x00,0x25,0xf0,0x80,0x42,0x0c,0x40,0x89,0x02,0x20,0x10,0xa1,0x00,0x23,0x58,0x80,0x04,0x24,0x00,0x08,0x52,0x00,0x01,0xa8,0x00,0x02,0x04,0x00,0x00,0x42,0x00,0x00,0xa1,0x00,0x00,0x40,0x80,0x00,0x00,0x00};
+static const unsigned char PROGMEM image_wifi_full_bits[] = {0x01,0xf0,0x00,0x07,0xfc,0x00,0x1e,0x0f,0x00,0x39,0xf3,0x80,0x77,0xfd,0xc0,0xef,0x1e,0xe0,0x5c,0xe7,0x40,0x3b,0xfb,0x80,0x17,0x1d,0x00,0x0e,0xee,0x00,0x05,0xf4,0x00,0x03,0xb8,0x00,0x01,0x50,0x00,0x00,0xe0,0x00,0x00,0x40,0x00,0x00,0x00,0x00};
+
 
 // AM2302 Sensor
 AM2302::AM2302_Sensor am2302(17); // Replace '0' with the correct pin connected to the sensor
@@ -356,9 +359,10 @@ display.setTextSize(2);
   display.setCursor(SCREEN_WIDTH - 24, 0); // Position it at top-right corner (16 pixels for the symbol size)
 
   if (connected) {
-    display.print("C");
+    display.drawBitmap(108.5, 1, image_wifi_full_bits, 19, 16, 1);
   } else {
-    display.print("NC");
+    display.drawBitmap(109, 0, image_wifi_not_connected_bits, 19, 16, 1);
+    
   }
 }
 
@@ -384,9 +388,10 @@ if (configData.temperature_sensor){
   display.setCursor(SCREEN_WIDTH - 20, 0); // Position it at top-right corner (16 pixels for the symbol size)
 display.setTextSize(1);
   if (connected) {
-    display.print("C");
+    display.drawBitmap(108.5, 1, image_wifi_full_bits, 19, 16, 1);
   } else {
-    display.print("NC");
+    display.drawBitmap(109, 0, image_wifi_not_connected_bits, 19, 16, 1);
+    
   }
 }
 void writePower(int x_pos, int y_pos) {
@@ -402,9 +407,10 @@ display.setCursor(0, 16);
   display.setCursor(SCREEN_WIDTH - 24, 0); // Position it at top-right corner (16 pixels for the symbol size)
 
   if (connected) {
-    display.print("C");
+    display.drawBitmap(108.5, 1, image_wifi_full_bits, 19, 16, 1);
   } else {
-    display.print("NC");
+    display.drawBitmap(109, 0, image_wifi_not_connected_bits, 19, 16, 1);
+    
   }
 }
 void initializeFastLED() {
@@ -606,7 +612,6 @@ void adjustAdvancedVariable(int index, int direction) {
 void handleEncoderInput() {
   static long lastProcessedPosition = 0;
   long currentPosition = myEnc.read();
-
   if (abs(currentPosition - lastProcessedPosition) >= ENCODER_STEP_THRESHOLD) {
     int direction = (currentPosition > lastProcessedPosition) ? 1 : -1;
     lastProcessedPosition = currentPosition;
@@ -680,18 +685,21 @@ void handleEncoderInput() {
 
 void handleButtonPress() {
 
+  if (digitalRead(26)==LOW){
+    isButtonPressed=true;
+  }
   static unsigned long lastPressTime = 0;  // Store last button press time
-  if (millis() - lastPressTime < 1500) {   // Ignore presses within 200ms
+  if (millis() - lastPressTime < 500) {   // Ignore presses within 200ms
     return;
   }
   lastPressTime = millis();  // Update last press time
 
   bool changed;
   
-  if (isButtonPressed && millis() - lastUpdateMillis > 1500) {
+  if (isButtonPressed && millis() - lastUpdateMillis > 500) {
     isButtonPressed = false;
     lastUpdateMillis = millis();
-    attachInterrupt(26, handleKey, FALLING); 
+    //attachInterrupt(26, handleKey, FALLING); 
     Serial.println("Button");
     if (currentMode == NORMAL) {
       configDataBackup = configData;
@@ -889,10 +897,7 @@ void drawScanResults() {
 void setup() {
   Serial.begin(9600);
   Wire.begin(SDA_PIN, SCL_PIN);
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-        Serial.println(F("SSD1306 allocation failed"));
-        for (;;); // Loop forever if display initialization fails
-    }
+display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS);
     display.setRotation(2);
     display.clearDisplay();
     display.display();
@@ -933,8 +938,8 @@ void setup() {
   delay(500);  
   
     
-    pinMode(26, INPUT_PULLUP);
-    attachInterrupt(26, handleKey, FALLING);
+    pinMode(26,INPUT);
+    //attachInterrupt(26, handleKey, FALLING);
     
     // Initialize AM2302 Sensor
     configData.temperature_sensor=true;
