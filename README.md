@@ -53,8 +53,7 @@ Finally, attach the LED profile to the top, ensuring that the cable is routed in
 
 <img src="https://github.com/user-attachments/assets/46d06167-4708-4c2c-b793-650a5338f7ea" alt="IMG_20250216_135642_520" style="width:20%;">
 
-## Bill Of Material (BOM)
-# Bill of Materials (BoM)
+## Bill Of Material (BoM)
 
 <details>
   <summary>Click to expand</summary>
@@ -76,7 +75,7 @@ Finally, attach the LED profile to the top, ensuring that the cable is routed in
 | 13 | R1, R2, R3       | 3   | 10k                  | Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal   |     |
 | 14 | SW1              | 1   | RotaryEncoder_Switch | Rotary_Encoder:RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm   |     |
 | 15 | U1               | 1   | esp32-wemos-d1-mini  | ESP32Mini:esp32-wemos-d1-mini                                   |     |
-| 16 | U2               | 1   | I2C IIC BiDirektional 5V~3.3V   | Level Shifter:4xLevel Shifter                                  |     |
+| 16 | U2               | 1   | I2C IIC BiDirektional 5V~3.3V   | Level Shifter:4xLevel Shifter                        |     |
 | 17 | WS2812 Neopixel  | 1   | WS2812B LED Strip    | LED Strip (1m)                                                 |     |
 | 18 | Diffusion Profile| 1   | Aluminium (1m)       | LED Diffuser Aluminum Profile                                  |     |
 | 19 | DHT2302 Sensor   | 1   | DHT2302              | Temperature & Humidity Sensor                                  |     |
@@ -85,9 +84,8 @@ Finally, attach the LED profile to the top, ensuring that the cable is routed in
 </details>
 
 ### Notes:
-- **WS2812 Neopixel**: Addressable LED strip (1m).
-- **Aluminium diffusion profile**: 1-meter LED diffuser.
-- **DHT2302**: Temperature and humidity sensor.
+- The profile is optional, since the controller can be used with any setup of Neopixel. When used as a standalone lamp, 1m is ideal. The amount of LEDs on the strip are also not set (standart value is 144, but it can be changed under advanced settings)
+- **DHT2302**: Temperature and humidity sensor (Optional).
 - **OLED display**: 0.96\" I2C screen (128x64 resolution).
 
 
