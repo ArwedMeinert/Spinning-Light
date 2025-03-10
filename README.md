@@ -23,7 +23,7 @@ Bluetooth Low Energy (BTLE) is used for connectivity, with the necessary library
 
 The casing is designed for modularity. Openings for the display, encoder, temperature sensor, and USB port can be finalized after printing. This also allows you to hardcode the Bluetooth address if you prefer not to use the GUI.
 
-<img src="https://github.com/user-attachments/assets/75ef979d-03b7-4561-b3dc-d7930409f4f4" alt="Exploded view" style="width:25%;">
+<img src="https://github.com/user-attachments/assets/468c3ac9-b141-46bd-b226-a026c01d82dd" alt="Exploded view" style="width:25%;">
 
 ---
 
@@ -116,7 +116,7 @@ Similarly, the spark constant controls the number of sparks triggered when excee
 
 ---
 
-# Known Compatible Power Trainers
+# Known Compatible Power Trainers with Two BT Channels
 
 | Works           | Does Not Work     |
 |-----------------|-------------------|
