@@ -23,7 +23,7 @@ Bluetooth Low Energy (BTLE) is used for connectivity, with the necessary library
 
 The casing is designed for modularity. Openings for the display, encoder, temperature sensor, and USB port can be finalized after printing. This also allows you to hardcode the Bluetooth address if you prefer not to use the GUI.
 
-<img src="https://github.com/user-attachments/assets/75ef979d-03b7-4561-b3dc-d7930409f4f4" alt="Exploded view" style="width:25%;">
+<img src="https://github.com/user-attachments/assets/468c3ac9-b141-46bd-b226-a026c01d82dd" alt="Exploded view" style="width:25%;">
 
 ---
 
@@ -53,6 +53,42 @@ Finally, attach the LED profile to the top, ensuring that the cable is routed in
 
 <img src="https://github.com/user-attachments/assets/46d06167-4708-4c2c-b793-650a5338f7ea" alt="IMG_20250216_135642_520" style="width:20%;">
 
+## Bill Of Material (BoM)
+
+<details>
+  <summary>Click to expand</summary>
+
+| #  | Reference         | Qty | Value                 | Footprint                                                         | DNP |
+|----|------------------|-----|----------------------|-----------------------------------------------------------------|-----|
+| 1  | J0               | 1   | Power                | Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical      |     |
+| 2  | J1               | 1   | Neopixel             | Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal    |     |
+| 3  | J2               | 1   | Temperature Sensor   | Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal    |     |
+| 4  | J3               | 1   | OLED                 | Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Horizontal    |     |
+| 5  | J4               | 1   | Reset                | Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical      |     |
+| 6  | J5               | 1   | Reserve IO23 5VCC    | Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal    |     |
+| 7  | J6               | 1   | Reserve IO25 5VCC    | Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal    |     |
+| 8  | J7               | 1   | Reserve IO09 3V3     | Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal    |     |
+| 9  | J8               | 1   | Reserve IO12 3V3     | Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal    |     |
+| 10 | J9               | 1   | GND                  | Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal    |     |
+| 11 | J10              | 1   | 3V3                  | Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal    |     |
+| 12 | J11              | 1   | 5VCC                 | Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Horizontal    |     |
+| 13 | R1, R2, R3       | 3   | 10k                  | Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P7.62mm_Horizontal   |     |
+| 14 | SW1              | 1   | RotaryEncoder_Switch | Rotary_Encoder:RotaryEncoder_Alps_EC11E-Switch_Vertical_H20mm   |     |
+| 15 | U1               | 1   | esp32-wemos-d1-mini  | ESP32Mini:esp32-wemos-d1-mini                                   |     |
+| 16 | U2               | 1   | I2C IIC BiDirektional 5V~3.3V   | Level Shifter:4xLevel Shifter                        |     |
+| 17 | WS2812 Neopixel  | 1   | WS2812B LED Strip    | LED Strip (1m)                                                 |     |
+| 18 | Diffusion Profile| 1   | Aluminium (1m)       | LED Diffuser Aluminum Profile                                  |     |
+| 19 | DHT2302 Sensor   | 1   | DHT2302              | Temperature & Humidity Sensor                                  |     |
+| 20 | OLED Display     | 1   | 0.96\" I2C OLED       | 128x64 OLED Display Module                                    |     |
+
+</details>
+
+### Notes:
+- The profile is optional, since the controller can be used with any setup of Neopixel. When used as a standalone lamp, 1m is ideal. The amount of LEDs on the strip are also not set (standart value is 144, but it can be changed under advanced settings)
+- **DHT2302**: Temperature and humidity sensor (Optional).
+- **OLED display**: 0.96\" I2C screen (128x64 resolution).
+
+
 ---
 
 # Usage
@@ -70,7 +106,7 @@ Similarly, the spark constant controls the number of sparks triggered when excee
 # Limitations and Improvements
 
 - **Bluetooth Channels:**  
-  The lamp only works with trainers that support at least two Bluetooth channels. I have tested it with the Wahoo KickrCore and the Zwift Hub. Since the Wahoo KickrCore works, I suspect it will also work with other Wahoo power trainers, although I have not tested them. I welcome any additional information on this topic. See the table below.
+  ~~The lamp only works with trainers that support at least two Bluetooth channels.~~ It is only possible to connect the lamp and Zwift via bluetooth if the power trainer supports two bluetooth cahannels. It is however possible to connect Zwift via ANT+ and the lamp via BTLE (virtual shifting does not work in this case). I have tested the bluetooth connection with the Wahoo KickrCore and the Zwift Hub. Since the Wahoo KickrCore works, I suspect it will also work with other Wahoo power trainers, although I have not tested them. I welcome any additional information on this topic. See the table below.
 
 - **Automatic Connection Issue:**  
   For some reason, upon startup the microcontroller does not automatically connect to the power trainer, even though the saved address appears to be correct. Manual connection works without issue, and the device reconnects if the power trainer loses power. Despite saving the address in the configuration data, automatic reconnection does not function as expected. I have tried scanning and multiple connection attempts at startup without success. The current workaround is to avoid powering off the lamp (as it consumes minimal power). Any advice on resolving this issue would be greatly appreciated.
@@ -80,7 +116,7 @@ Similarly, the spark constant controls the number of sparks triggered when excee
 
 ---
 
-# Known Compatible Power Trainers
+# Known Compatible Power Trainers with Two BT Channels
 
 | Works           | Does Not Work     |
 |-----------------|-------------------|
