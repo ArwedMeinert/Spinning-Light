@@ -6,7 +6,10 @@ This project combines dynamic RGB lighting with a home trainer to enhance your w
 All parameters—such as LED brightness, FTP value, and the power trainer’s Bluetooth address—can be adjusted via the GUI. Under **Advanced Settings**, you can modify the zone percentages, LED filter constants, and the number of pixels.  
 ___  
 On the main screen, sensor data for humidity and temperature is displayed. The second page shows the current power output, while the third page displays the Bluetooth address and the power trainer's name.
+___
+Check out the Youtube Video about the project:
 
+[![Watch the demo](https://img.youtube.com/vi/y7wqykNJxKs/maxresdefault.jpg)](https://www.youtube.com/watch?v=y7wqykNJxKs)
 ---
 
 # Controller and Code
