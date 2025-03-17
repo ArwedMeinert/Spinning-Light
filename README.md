@@ -12,7 +12,7 @@ Check out the Youtube Video about the project:
 [![Watch the demo](https://img.youtube.com/vi/y7wqykNJxKs/maxresdefault.jpg)](https://www.youtube.com/watch?v=y7wqykNJxKs)
 ---
 
-# Controller and Code
+# Microcontroller and Code
 
 The lamp is built around an ESP32 NodeMCU Mini to keep the design compact. The firmware was developed using the Arduino IDE with the ESP32 board definitions (select Node32s). The encoder’s built-in push button is handled without an interrupt, which improves performance and reduces false button detections. A physical pull-up resistor is used, so the internal pull-up is disabled on that pin.
 
